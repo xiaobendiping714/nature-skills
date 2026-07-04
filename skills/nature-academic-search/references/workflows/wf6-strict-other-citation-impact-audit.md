@@ -1,13 +1,15 @@
 # Workflow 6: Strict Other-Citation Impact Audit
 
 **Purpose:** Audit who cites a target paper, distinguish strict independent
-other-citations from self/team citations, identify high-profile independent
-citers, and extract how those citers discuss the target paper.
+other-citations from self/team citations, build article-level citation metric
+tables, identify high-profile independent citers, and extract how those citers
+discuss the target paper.
 
 **Use when the user asks:** `严格他引`, `他引判定`, `排除自引`,
 `谁引用了我的文章`, `引用我的文章的人有没有大牛`, `院士引用`,
 `杰青引用`, `长江学者引用`, `Fellow citation`, `influential citer`,
-`citation context`, or similar citation-impact questions.
+`citation context`, `文章引用表`, `指定文章引用数`, `严格他引数`,
+`整理成表格`, or similar citation-impact questions.
 
 **Uses:**
 - [Search Strategy](../search-strategy.md) — construct title/DOI/cited-by queries.
@@ -107,6 +109,70 @@ definition, state the changed rule explicitly.
    - Separate high-profile independent citers from ordinary citing papers.
    - Keep every identity claim tied to evidence. Unsupported "大牛" labels are
      not allowed.
+
+## Article Summary Table Mode
+
+Use this compact mode when the user asks to organize one or more specified
+papers into a table, especially when they ask for fields such as article title,
+publication date, authors, affiliations, citation count, strict other-citation
+count, and DOI.
+
+### Required fields
+
+For each specified paper, return a table with these columns unless the user asks
+for a different schema:
+
+| Column | Required handling |
+|---|---|
+| `Article title` | Use the resolved title from DOI/PMID/arXiv/publisher metadata. If multiple records match, ask for confirmation before counting citations. |
+| `Publication date` | Prefer full date (`YYYY-MM-DD`); otherwise use year/month or year and mark the precision. |
+| `Authors` | List all authors when the list is short; for long author lists, list first 6 + `et al.` and state that the full author list is available. |
+| `Author affiliations` | Preserve author-affiliation mapping when metadata provides it. If only institution-level metadata is available, summarize distinct affiliations and mark mapping precision. |
+| `Citation count` | Use the best available citation-count source and name it in an evidence note. Do not merge counts from different databases as if they are identical. |
+| `Strict other-citation count` | Count only records classified as `confirmed_strict_other_citation`. Optionally report `probable_external_citation` separately in a note, not inside the strict count. |
+| `DOI` | Normalize DOI casing/prefix; use `not_found` only after checking title and ID-based lookup routes. |
+
+### Counting rules
+
+1. Resolve the target paper first; do not count citations against an ambiguous
+   title match.
+2. Retrieve citing records as in the main procedure, deduplicate them, then
+   classify strict other-citation status.
+3. Set `Citation count` to one source-specific count, preferably Scopus, Web of
+   Science, Semantic Scholar, OpenAlex, or publisher/CrossRef in that order when
+   available. If multiple counts are available, include them in `Evidence /
+   notes` instead of collapsing them.
+4. Set `Strict other-citation count` to the number of deduplicated citing papers
+   with label `confirmed_strict_other_citation`.
+5. If the audit cannot inspect enough metadata to classify strict independence,
+   use `not_assessable` for the strict count and state the missing sources.
+6. For batches, keep one row per target paper and put source limitations in a
+   short notes column or a separate evidence section.
+
+### Table format
+
+```markdown
+| Article title | Publication date | Authors | Author affiliations | Citation count | Strict other-citation count | DOI | Evidence / notes |
+|---|---|---|---|---:|---:|---|---|
+|  |  |  |  |  |  |  |  |
+```
+
+For Chinese outputs, use this header:
+
+```markdown
+| 文章名 | 发表时间 | 作者名 | 作者机构 | 引用数 | 严格他引数 | DOI | 证据 / 备注 |
+|---|---|---|---|---:|---:|---|---|
+|  |  |  |  |  |  |  |  |
+```
+
+Always include a short source note after the table:
+
+```text
+计数来源：
+- 引用数来源：
+- 严格他引判定来源：
+- 未覆盖或无法访问的来源：
+```
 
 ## Output Format
 
